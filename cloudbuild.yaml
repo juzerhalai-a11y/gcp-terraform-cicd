@@ -15,3 +15,7 @@ steps:
   - name: 'hashicorp/terraform:1.7.0'
     id: 'terraform apply'
     args: ['apply', '-auto-approve']
+
+# Root-level options block (placed outside the steps block)
+options:
+  logging: CLOUD_LOGGING_ONLY
