@@ -109,7 +109,7 @@ resource "kubernetes_deployment" "webapp" {
           image = "us-central1-docker.pkg.dev/CLGCPORG10-193/my-docker-repo/webapp:latest" # Update with your registry path
           name  = "webapp"
           port {
-            container_port = 3000
+            container_port = 8080
           }  
           # Pass MongoDB connection string via an environment variable
           env {
@@ -137,7 +137,7 @@ resource "kubernetes_service" "webapp_service" {
     }
     port {
       port        = 80
-      target_port = 3000 
+      target_port = 8080
     }
     type = "NodePort"
   }
