@@ -40,14 +40,15 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 }
 
-# 3. Kubernetes Provider Configuration (connects to the private cluster)
+# 1. Declare the data source first using "current"
+data "google_client_config" "current" {}
+
+# 2. Kubernetes Provider Configuration referencing "current"
 provider "kubernetes" {
-  host                    = "https://${google_container_cluster.private_cluster.endpoint}"
+  host                   = "https://${google_container_cluster.private_cluster.endpoint}"
   token                  = data.google_client_config.current.access_token
   cluster_ca_certificate = base64decode(google_container_cluster.private_cluster.master_auth[0].cluster_ca_certificate)
 }
-
-data "google_client_config" "default" {}
 
 # 4. Kubernetes Service Account for the Container Application
 resource "kubernetes_service_account" "app_sa" {
