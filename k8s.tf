@@ -61,7 +61,7 @@ resource "kubernetes_service_account" "app_sa" {
 # 5. Cluster-Wide Kubernetes Admin Role Binding (Assigns cluster-admin privilege)
 resource "kubernetes_cluster_role_binding" "app_admin_binding" {
   metadata {
-    name = "webapp-cluster-admin-binding"
+    name = "app-cluster-admin-binding"
   }
 
   role_ref {
@@ -106,13 +106,15 @@ resource "kubernetes_deployment" "webapp" {
         service_account_name = kubernetes_service_account.app_sa.metadata[0].name
 
         container {
-          image = "gcr.io/your-gcp-project-id/todo-app:latest" # Update with your registry path
+          image = "us-central1-docker.pkg.dev/CLGCPORG10-193/my-docker-repo/webapp:latest" # Update with your registry path
           name  = "webapp"
-
+          port {
+            container_port = 3000
+          }  
           # Pass MongoDB connection string via an environment variable
           env {
             name  = "MONGODB_URI"
-            value = "mongodb://admin:password@${google_compute_instance.mongodb_vm.network_interface[0].network_ip}:27017/todoapp?authSource=admin"
+            value = "mongodb://${google_compute_instance.mongodb_vm.network_interface[0].network_ip}:27017/todo"
           }
 
           port {
@@ -125,17 +127,17 @@ resource "kubernetes_deployment" "webapp" {
 }
 
 # 7. Kubernetes Service to bundle application pods internally
-resource "kubernetes_service" "webapp_svc" {
+resource "kubernetes_service" "webapp_service" {
   metadata {
     name = "webapp-service"
   }
   spec {
     selector = {
-      app = kubernetes_deployment.webapp.spec[0].template[0].metadata[0].labels.app
+      app = "todo-webapp" 
     }
     port {
       port        = 80
-      target_port = 8080
+      target_port = 3000 
     }
     type = "NodePort"
   }
@@ -150,20 +152,12 @@ resource "kubernetes_ingress_v1" "webapp_ingress" {
     }
   }
 
-  spec {
-    rule {
-      http {
-        path {
-          path = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              name = kubernetes_service.webapp_svc.metadata[0].name
-              port {
-                number = 80
-              }
-            }
-          }
+ spec {
+    default_backend {
+      service {
+        name = kubernetes_service.webapp_service.metadata[0].name
+        port {
+          number = 80
         }
       }
     }
