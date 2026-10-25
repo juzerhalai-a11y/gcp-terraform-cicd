@@ -5,7 +5,7 @@ resource "google_service_account" "overly_permissive_sa" {
 }
 
 resource "google_project_iam_member" "vm_editor_role" {
-  project = "clgcporg10-19"
+  project = "clgcporg10-193"
   role    = "roles/editor" # Grants broad access including ability to create VMs
   member  = "serviceAccount:${google_service_account.overly_permissive_sa.email}"
 }
