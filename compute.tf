@@ -21,8 +21,8 @@ resource "google_compute_instance" "mongodb_vm" {
 
   boot_disk {
     initialize_params {
-      # Utilizing an older Debian release representing a 1+ year outdated Linux version
-      image = "debian-cloud/debian-11"
+      # Using a specific older dated version of Debian 12 instead of the rolling 'debian-11' or latest 'debian-12'
+      image = "debian-cloud/debian-12-v20250114"
     }
   }
 
