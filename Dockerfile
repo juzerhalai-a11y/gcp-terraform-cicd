@@ -1,16 +1,30 @@
-FROM node:18-alpine
+# Stage 1: Build the Go application
+FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Copy application dependencies and install them
-COPY package*.json ./
-RUN npm install
-
-# Copy the rest of your application source code
+# Copy all project files into the container
 COPY . .
 
-# Embed the wizexercise.txt file with your name as required by the exercise
+# Download dependencies and build the binary
+RUN go mod tidy
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+
+# Stage 2: Create a minimal production runtime image
+FROM alpine:latest
+
+WORKDIR /app
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/main .
+
+# Copy the assets folder so HTML templates are available to Gin
+COPY --from=builder /app/assets ./assets
+
+# Wiz Security Requirement: Embed wizexercise.txt
 RUN echo "JuzerHalai - Wiz Exercise" > /app/wizexercise.txt
 
-EXPOSE 3000
-CMD ["npm", "start"]
+# Default port exposed by the Go application
+EXPOSE 8080
+
+CMD ["./main"]
