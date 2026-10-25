@@ -1,0 +1,17 @@
+# cloudbuild.yaml
+
+steps:
+  # Step 1: Initialize Terraform (connects to the remote GCS backend and downloads providers)
+  - name: 'hashicorp/terraform:1.7.0'
+    id: 'terraform init'
+    args: ['init']
+
+  # Step 2: Generate and preview the execution plan for infrastructure changes
+  - name: 'hashicorp/terraform:1.7.0'
+    id: 'terraform plan'
+    args: ['plan']
+
+  # Step 3: Automatically apply the changes to provision/update your GCP resources
+  - name: 'hashicorp/terraform:1.7.0'
+    id: 'terraform apply'
+    args: ['apply', '-auto-approve']
