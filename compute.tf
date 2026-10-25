@@ -66,9 +66,9 @@ resource "google_compute_instance" "mongodb_vm" {
     BACKUP_DIR="/tmp/mongo_backup_\$TIMESTAMP"
     mkdir -p \$BACKUP_DIR
     mongodump --out \$BACKUP_DIR
-    tar -zcvf \${BACKUP_DIR}.tar.gz -C /tmp/ "mongo_backup_\$TIMESTAMP"
-    gsutil cp \${BACKUP_DIR}.tar.gz gs://${google_storage_bucket.backup_bucket.name}/
-    rm -rf \$BACKUP_DIR \${BACKUP_DIR}.tar.gz
+    tar -zcvf $${BACKUP_DIR}.tar.gz -C /tmp/ "mongo_backup_$TIMESTAMP"
+    gsutil cp $${BACKUP_DIR}.tar.gz gs://${google_storage_bucket.backup_bucket.name}/
+    rm -rf $${BACKUP_DIR} $${BACKUP_DIR}.tar.gz
     EOF
     chmod +x /usr/local/bin/mongo_backup.sh
 
