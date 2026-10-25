@@ -1,6 +1,9 @@
 # Stage 1: Build the Go application
 FROM golang:1.21-alpine AS builder
 
+# Install git so Go can resolve module paths correctly
+RUN apk add --no-cache git
+
 WORKDIR /app
 
 # Copy all project files into the container
