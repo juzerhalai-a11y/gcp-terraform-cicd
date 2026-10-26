@@ -10,7 +10,7 @@ resource "google_project_iam_member" "vm_editor_role" {
   member  = "serviceAccount:${google_service_account.overly_permissive_sa.email}"
 }
 
-# 2. Create the Virtual Machine running Debian 11 for native MongoDB compatibility
+# 2. Create the Virtual Machine running Debian 12
 resource "google_compute_instance" "mongodb_vm" {
   name         = "wiz-mongodb-server"
   machine_type = "e2-medium"
@@ -21,7 +21,7 @@ resource "google_compute_instance" "mongodb_vm" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-11" 
+      image = "debian-cloud/debian-12" 
     }
   }
 
@@ -39,26 +39,65 @@ resource "google_compute_instance" "mongodb_vm" {
     scopes = ["cloud-platform"]
   }
 
-  # Startup script to install MongoDB natively on Debian 11 and configure backups
+  # Startup script using MongoDB 4.4 binary tarball for Debian 12 compatibility
   metadata_startup_script = <<-EOT
     #!/bin/bash
     export DEBIAN_FRONTEND=noninteractive
 
     apt-get update
-    apt-get install -y gnupg wget curl
+    apt-get install -y wget curl libgomp1
 
-    # Install MongoDB 4.4 natively on Debian 11 (Bullseye)
-    wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
-    echo "deb http://repo.mongodb.org/apt/debian bullseye/mongodb-org/4.4 main" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
-    apt-get update
-    apt-get install -y mongodb-org=4.4.18 mongodb-org-server=4.4.18 mongodb-org-shell=4.4.18 mongodb-org-mongos=4.4.18 mongodb-org-tools=4.4.18
+    # Download and extract MongoDB 4.4 official binaries directly (bypasses apt libssl dependencies)
+    wget https://downloads.mongodb.org/linux/mongodb-linux-x86_64-debian10-4.4.18.tgz
+    tar -zxvf mongodb-linux-x86_64-debian10-4.4.18.tgz
+    mv mongodb-linux-x86_64-debian10-4.4.18 /opt/mongodb
 
-    # Configure MongoDB to require database authentication
-    sed -i 's/#security:/security:\n  authorization: "enabled"/' /etc/mongod.conf
+    # Create MongoDB data and log directories
+    mkdir -p /var/lib/mongo /var/log/mongodb
+    useradd -r -s /bin/false mongodb || true
+    chown -R mongodb:mongodb /var/lib/mongo /var/log/mongodb
 
-    # Allow external network connections from your GKE private cluster subnet
-    sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/g' /etc/mongod.conf
+    # Create standard configuration file
+    cat << 'EOF' > /etc/mongod.conf
+    storage:
+      dbPath: /var/lib/mongo
+    systemLog:
+      destination: file
+      path: /var/log/mongodb/mongod.log
+      logAppend: true
+    net:
+      bindIp: 0.0.0.0
+      port: 27017
+    security:
+      authorization: "enabled"
+    EOF
 
+    chown mongodb:mongodb /etc/mongod.conf
+
+    # Create systemd service for MongoDB
+    cat << 'EOF' > /etc/systemd/system/mongod.service
+    [Unit]
+    Description=MongoDB Database Server
+    Documentation=https://docs.mongodb.org/manual
+    After=network.target
+
+    [Service]
+    User=mongodb
+    Group=mongodb
+    ExecStart=/opt/mongodb/bin/mongod --config /etc/mongod.conf
+    Restart=always
+    LimitFSIZE=infinity
+    LimitCPU=infinity
+    LimitAS=infinity
+    LimitMEMLOCK=infinity
+    TasksMax=infinity
+    TasksAccounting=false
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+
+    systemctl daemon-reload
     systemctl start mongod
     systemctl enable mongod
 
@@ -68,7 +107,7 @@ resource "google_compute_instance" "mongodb_vm" {
     TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
     BACKUP_DIR="/tmp/mongo_backup_\$TIMESTAMP"
     mkdir -p \$BACKUP_DIR
-    mongodump --out \$BACKUP_DIR
+    /opt/mongodb/bin/mongodump --out \$BACKUP_DIR
     tar -zcvf $${BACKUP_DIR}.tar.gz -C /tmp/ "mongo_backup_$TIMESTAMP"
     gsutil cp $${BACKUP_DIR}.tar.gz gs://${google_storage_bucket.backup_bucket.name}/
     rm -rf $${BACKUP_DIR} $${BACKUP_DIR}.tar.gz
