@@ -1,14 +1,14 @@
-# 1. Private GKE Cluster Deployed in the Private Subnet
+# 1. Private GKE Cluster Deployed in the Custom VPC Network
 resource "google_container_cluster" "private_cluster" {
   name     = "wiz-private-k8s-cluster"
   location = "us-central1-a"
 
   # We can't create a cluster with no node pool defined, but we want to manage it separately
   remove_default_node_pool = true
-  initial_node_count       = 1
+  initial_node_count        = 1
 
-  network    = google_compute_network.main.name
-  subnetwork = google_compute_subnetwork.private_subnet.name
+  network    = google_compute_network.vpc_network.name
+  subnetwork = "default" # Or your subnetwork reference if explicitly defined
 
   # Enforce Private Cluster Settings (nodes only have private IPs)
   private_cluster_config {
@@ -106,19 +106,17 @@ resource "kubernetes_deployment" "webapp" {
         service_account_name = kubernetes_service_account.app_sa.metadata[0].name
 
         container {
-          image = "us-central1-docker.pkg.dev/CLGCPORG10-193/my-docker-repo/webapp:latest" # Update with your registry path
-          name  = "webapp"
-          port {
-            container_port = 8080
-          }  
-          # Pass MongoDB connection string via an environment variable
-          env {
-            name  = "MONGODB_URI"
-            value = "mongodb://${google_compute_instance.mongodb_vm.network_interface[0].network_ip}:27017/todo"
-          }
+          image             = "${google_artifact_registry_repository.my_repo.location}-docker.pkg.dev/${google_artifact_registry_repository.my_repo.project}/${google_artifact_registry_repository.my_repo.name}/golang-todo-mongodb:v2"
+          name              = "webapp"
+          image_pull_policy = "Always"
 
           port {
             container_port = 8080
+          }
+
+          env {
+            name  = "MONGODB_URI"
+            value = "mongodb://10.0.1.3:27017/todo"
           }
         }
       }
