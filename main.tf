@@ -5,7 +5,7 @@ provider "google" {
 }
 
 # Fetch current GCP client config for authentication tokens
-data.google_client_config "default" {}
+data "google_client_config" "default" {}
 
 # Configure the Kubernetes Provider using data sources from the GKE cluster
 provider "kubernetes" {
