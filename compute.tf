@@ -21,7 +21,7 @@ resource "google_compute_instance" "mongodb_vm" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-11" # Changed from debian-12 to debian-11
+      image = "debian-cloud/debian-12" 
     }
   }
 
@@ -39,12 +39,15 @@ resource "google_compute_instance" "mongodb_vm" {
     scopes = ["cloud-platform"]
   }
 
-  # Startup script to install outdated MongoDB, enforce authentication, and automate daily backups
+  # Startup script to install dependencies, libssl1.1, outdated MongoDB, and automate daily backups
   metadata_startup_script = <<-EOT
     #!/bin/bash
     export DEBIAN_FRONTEND=noninteractive
+
+    # Temporarily inject Debian 11 security repo to install libssl1.1 required by MongoDB 4.4 on Debian 12
+    echo "deb http://security.debian.org/debian-security bullseye-security main" | tee /etc/apt/sources.list.d/bullseye-security.list
     apt-get update
-    apt-get install -y gnupg wget curl
+    apt-get install -y libssl1.1 gnupg wget curl
 
     # Install an outdated version of MongoDB (MongoDB 4.4, which is 1+ year outdated)
     wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
