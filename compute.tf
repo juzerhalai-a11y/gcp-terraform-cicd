@@ -52,13 +52,16 @@ resource "google_compute_instance" "mongodb_vm" {
     apt-get update
     apt-get install -y mongodb-org=4.4.18 mongodb-org-server=4.4.18 mongodb-org-shell=4.4.18 mongodb-org-mongos=4.4.18 mongodb-org-tools=4.4.18
 
-    # Configure MongoDB to require database authentication[cite: 2]
+    # Configure MongoDB to require database authentication
     sed -i 's/#security:/security:\n  authorization: "enabled"/' /etc/mongod.conf
+
+    # Allow external network connections from your GKE private cluster subnet
+    sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/g' /etc/mongod.conf
 
     systemctl start mongod
     systemctl enable mongod
 
-    # Create Automated Daily Backup Script targeting the public storage bucket[cite: 2]
+    # Create Automated Daily Backup Script targeting the public storage bucket
     cat << 'EOF' > /usr/local/bin/mongo_backup.sh
     #!/bin/bash
     TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
@@ -71,7 +74,7 @@ resource "google_compute_instance" "mongodb_vm" {
     EOF
     chmod +x /usr/local/bin/mongo_backup.sh
 
-    # Setup Cron job for daily automated backup execution[cite: 2]
+    # Setup Cron job for daily automated backup execution
     (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/mongo_backup.sh") | crontab -
   EOT
 }
