@@ -8,7 +8,7 @@ resource "google_container_cluster" "private_cluster" {
   initial_node_count        = 1
 
   network    = google_compute_network.vpc_network.name
-  subnetwork = "default" # Or your subnetwork reference if explicitly defined
+  subnetwork = google_compute_subnetwork.private_subnet.name # Fixed to use your custom private subnet
 
   # Enforce Private Cluster Settings (nodes only have private IPs)
   private_cluster_config {
@@ -40,17 +40,7 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 }
 
-# 1. Declare the data source first using "current"
-data "google_client_config" "current" {}
-
-# 2. Kubernetes Provider Configuration referencing "current"
-provider "kubernetes" {
-  host                   = "https://${google_container_cluster.private_cluster.endpoint}"
-  token                  = data.google_client_config.current.access_token
-  cluster_ca_certificate = base64decode(google_container_cluster.private_cluster.master_auth[0].cluster_ca_certificate)
-}
-
-# 4. Kubernetes Service Account for the Container Application
+# 3. Kubernetes Service Account for the Container Application
 resource "kubernetes_service_account" "app_sa" {
   metadata {
     name      = "webapp-service-account"
@@ -58,7 +48,7 @@ resource "kubernetes_service_account" "app_sa" {
   }
 }
 
-# 5. Cluster-Wide Kubernetes Admin Role Binding (Assigns cluster-admin privilege)
+# 4. Cluster-Wide Kubernetes Admin Role Binding (Assigns cluster-admin privilege)
 resource "kubernetes_cluster_role_binding" "app_admin_binding" {
   metadata {
     name = "app-cluster-admin-binding"
@@ -77,7 +67,7 @@ resource "kubernetes_cluster_role_binding" "app_admin_binding" {
   }
 }
 
-# 6. Containerized Application Deployment (Injecting MongoDB via Environment Variable)
+# 5. Containerized Application Deployment (Injecting MongoDB via Environment Variable)
 resource "kubernetes_deployment" "webapp" {
   metadata {
     name = "webapp-deployment"
@@ -124,7 +114,7 @@ resource "kubernetes_deployment" "webapp" {
   }
 }
 
-# 7. Kubernetes Service to bundle application pods internally
+# 6. Kubernetes Service to bundle application pods internally
 resource "kubernetes_service" "webapp_service" {
   metadata {
     name = "webapp-service"
@@ -141,7 +131,7 @@ resource "kubernetes_service" "webapp_service" {
   }
 }
 
-# 8. Kubernetes Ingress (Dynamically provisions the Cloud Provider Load Balancer)
+# 7. Kubernetes Ingress (Dynamically provisions the Cloud Provider Load Balancer)
 resource "kubernetes_ingress_v1" "webapp_ingress" {
   metadata {
     name = "webapp-ingress"
@@ -150,7 +140,7 @@ resource "kubernetes_ingress_v1" "webapp_ingress" {
     }
   }
 
- spec {
+  spec {
     default_backend {
       service {
         name = kubernetes_service.webapp_service.metadata[0].name
