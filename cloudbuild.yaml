@@ -22,12 +22,26 @@ steps:
     id: 'terraform init'
     args: ['init']
 
-  # Step 4: Generate and preview the execution plan for infrastructure changes
+  # Step 4: Fetch GKE Cluster Credentials so the Kubernetes provider knows how to connect
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'gke credentials'
+    entrypoint: 'gcloud'
+    args:
+      - 'container'
+      - 'clusters'
+      - 'get-credentials'
+      - 'wiz-private-k8s-cluster'
+      - '--zone'
+      - 'us-central1-a'
+      - '--project'
+      - '$PROJECT_ID'
+
+  # Step 5: Generate and preview the execution plan for infrastructure changes
   - name: 'hashicorp/terraform:1.7.0'
     id: 'terraform plan'
     args: ['plan']
 
-  # Step 5: Automatically apply the changes to provision/update your GCP resources
+  # Step 6: Automatically apply the changes to provision/update your GCP resources
   - name: 'hashicorp/terraform:1.7.0'
     id: 'terraform apply'
     args: ['apply', '-auto-approve']
