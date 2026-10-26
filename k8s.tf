@@ -96,7 +96,7 @@ resource "kubernetes_deployment" "webapp" {
         service_account_name = kubernetes_service_account.app_sa.metadata[0].name
 
         container {
-          image             = "${google_artifact_registry_repository.my_repo.location}-docker.pkg.dev/${google_artifact_registry_repository.my_repo.project}/${google_artifact_registry_repository.my_repo.name}/golang-todo-mongodb:v2"
+          image = "${google_artifact_registry_repository.my_repo.location}-docker.pkg.dev/${google_artifact_registry_repository.my_repo.project}/${google_artifact_registry_repository.my_repo.name}/webapp:latest"
           name              = "webapp"
           image_pull_policy = "Always"
 
