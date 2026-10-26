@@ -44,14 +44,15 @@ resource "google_compute_instance" "mongodb_vm" {
     #!/bin/bash
     export DEBIAN_FRONTEND=noninteractive
 
-    # Temporarily inject Debian 11 security repo to install libssl1.1 required by MongoDB 4.4 on Debian 12
-    echo "deb http://security.debian.org/debian-security bullseye-security main" | tee /etc/apt/sources.list.d/bullseye-security.list
+    # Directly download and install a stable libssl1.1 package for Debian 11/bullseye
+    wget http://archive.debian.org/debian/pool/main/o/openssl/libssl1.1_1.1.1n-0+deb11u3_amd64.deb
+    dpkg -i libssl1.1_1.1.1n-0+deb11u3_amd64.deb
     apt-get update
-    apt-get install -y libssl1.1 gnupg wget curl
+    apt-get install -y gnupg wget curl
 
     # Install an outdated version of MongoDB (MongoDB 4.4, which is 1+ year outdated)
     wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
-    echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | tee /etc/syc/sources.list.d/mongodb-org-4.4.list || echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+    echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list || echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
     apt-get update
     apt-get install -y mongodb-org=4.4.18 mongodb-org-server=4.4.18 mongodb-org-shell=4.4.18 mongodb-org-mongos=4.4.18 mongodb-org-tools=4.4.18
 
@@ -80,4 +81,3 @@ resource "google_compute_instance" "mongodb_vm" {
     # Setup Cron job for daily automated backup execution
     (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/mongo_backup.sh") | crontab -
   EOT
-}
