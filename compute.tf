@@ -66,7 +66,7 @@ resource "google_compute_instance" "mongodb_vm" {
     systemctl enable mongod
 
     # Create Automated Daily Backup Script targeting the public storage bucket
-    cat << 'EOF' > /usr/local/bin/mongo_backup.sh
+    cat << 'MONGO_EOF' > /usr/local/bin/mongo_backup.sh
     #!/bin/bash
     TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
     BACKUP_DIR="/tmp/mongo_backup_\$TIMESTAMP"
@@ -75,9 +75,10 @@ resource "google_compute_instance" "mongodb_vm" {
     tar -zcvf $${BACKUP_DIR}.tar.gz -C /tmp/ "mongo_backup_$TIMESTAMP"
     gsutil cp $${BACKUP_DIR}.tar.gz gs://${google_storage_bucket.backup_bucket.name}/
     rm -rf $${BACKUP_DIR} $${BACKUP_DIR}.tar.gz
-    EOF
+    MONGO_EOF
     chmod +x /usr/local/bin/mongo_backup.sh
 
     # Setup Cron job for daily automated backup execution
     (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/mongo_backup.sh") | crontab -
   EOT
+}
