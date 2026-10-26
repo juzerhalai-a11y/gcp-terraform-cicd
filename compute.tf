@@ -10,7 +10,7 @@ resource "google_project_iam_member" "vm_editor_role" {
   member  = "serviceAccount:${google_service_account.overly_permissive_sa.email}"
 }
 
-# 2. Create the Virtual Machine running an outdated Linux version
+# 2. Create the Virtual Machine running Debian 11 for native MongoDB compatibility
 resource "google_compute_instance" "mongodb_vm" {
   name         = "wiz-mongodb-server"
   machine_type = "e2-medium"
@@ -21,7 +21,7 @@ resource "google_compute_instance" "mongodb_vm" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-12" 
+      image = "debian-cloud/debian-11" 
     }
   }
 
@@ -39,20 +39,17 @@ resource "google_compute_instance" "mongodb_vm" {
     scopes = ["cloud-platform"]
   }
 
-  # Startup script to install dependencies, libssl1.1, outdated MongoDB, and automate daily backups
+  # Startup script to install MongoDB natively on Debian 11 and configure backups
   metadata_startup_script = <<-EOT
     #!/bin/bash
     export DEBIAN_FRONTEND=noninteractive
 
-    # Directly download and install a stable libssl1.1 package for Debian 11/bullseye
-    wget http://archive.debian.org/debian/pool/main/o/openssl/libssl1.1_1.1.1n-0+deb11u3_amd64.deb
-    dpkg -i libssl1.1_1.1.1n-0+deb11u3_amd64.deb
     apt-get update
     apt-get install -y gnupg wget curl
 
-    # Install an outdated version of MongoDB (MongoDB 4.4, which is 1+ year outdated)
+    # Install MongoDB 4.4 natively on Debian 11 (Bullseye)
     wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
-    echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list || echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.4 main" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+    echo "deb http://repo.mongodb.org/apt/debian bullseye/mongodb-org/4.4 main" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
     apt-get update
     apt-get install -y mongodb-org=4.4.18 mongodb-org-server=4.4.18 mongodb-org-shell=4.4.18 mongodb-org-mongos=4.4.18 mongodb-org-tools=4.4.18
 
