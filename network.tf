@@ -9,7 +9,11 @@ resource "google_compute_subnetwork" "public_subnet" {
   name          = "wiz-public-subnet"
   ip_cidr_range = "10.0.1.0/24"
   region        = "us-central1"
-  network       = google_compute_network.vpc_network.id
+  network       = google_compute_network.vpc_network.name
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # 3. Create the Private Subnet (for the K8s Cluster)
@@ -17,7 +21,11 @@ resource "google_compute_subnetwork" "private_subnet" {
   name          = "wiz-private-subnet"
   ip_cidr_range = "10.0.2.0/24"
   region        = "us-central1"
-  network       = google_compute_network.vpc_network.id
+  network       = google_compute_network.vpc_network.name
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # 4. Firewall Rule: Expose SSH to the Public Internet
