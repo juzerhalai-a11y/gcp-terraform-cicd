@@ -20,3 +20,12 @@ resource "google_project_iam_audit_config" "project_audit" {
     log_type = "DATA_WRITE"
   }
 }
+# Preventative Control: Enforce Public Access Prevention on Cloud Storage
+resource "google_project_organization_policy" "enforce_bucket_public_access" {
+  project    = var.project_id
+  constraint = "storage.publicAccessPrevention"
+
+  boolean_policy {
+    enforced = true
+  }
+}
