@@ -1,7 +1,8 @@
-# Declare the project_id variable so Terraform recognizes it across the configuration scope
+# Declare the project_id variable with your GCP project ID as the default value
 variable "project_id" {
   type        = string
   description = "The GCP project ID"
+  default     = "clgcporg10-193"
 }
 
 # Enable Control Plane and Cloud Audit Logging for all services
