@@ -5,7 +5,7 @@ variable "project_id" {
   default     = "clgcporg10-193"
 }
 
-# Enable Control Plane and Cloud Audit Logging for all services
+# 1. Detective Control: Enable Control Plane and Cloud Audit Logging for all services
 resource "google_project_iam_audit_config" "project_audit" {
   project = var.project_id
   service = "allServices"
@@ -20,12 +20,15 @@ resource "google_project_iam_audit_config" "project_audit" {
     log_type = "DATA_WRITE"
   }
 }
-# Preventative Control: Enforce Public Access Prevention on Cloud Storage
-resource "google_project_organization_policy" "enforce_bucket_public_access" {
-  project    = var.project_id
-  constraint = "storage.publicAccessPrevention"
 
-  boolean_policy {
-    enforced = true
-  }
+# 2. Preventative Control: Enforce Public Access Prevention directly on Cloud Storage
+resource "google_storage_bucket" "secure_bucket" {
+  name                        = "${var.project_id}-secure-data-bucket"
+  project                     = var.project_id
+  location                    = "US"
+  force_destroy               = true
+  
+  # Preventative Settings
+  public_access_prevention    = "enforced"
+  uniform_bucket_level_access = true
 }
