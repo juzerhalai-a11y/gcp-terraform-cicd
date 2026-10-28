@@ -42,17 +42,17 @@ resource "google_compute_firewall" "allow_public_ssh" {
   target_tags   = ["public-vm"]
 }
 
-# 5. Firewall Rule: Restrict MongoDB Access to Kubernetes Network Only
+# 5. Firewall Rule: Allow GKE Pods and VPC to Access MongoDB
 resource "google_compute_firewall" "allow_k8s_to_mongo" {
   name    = "allow-k8s-to-mongodb"
   network = google_compute_network.vpc_network.name
 
   allow {
     protocol = "tcp"
-    ports    = ["27017"] # Standard MongoDB port
+    ports    = ["27017"]
   }
 
-  # Restricts database access exclusively to the private subnet where K8s runs
-  source_ranges = [google_compute_subnetwork.private_subnet.ip_cidr_range]
+  # Include both your custom VPC range and your GKE cluster's pod CIDR
+  source_ranges = ["10.0.0.0/16", "10.16.0.0/16"] 
   target_tags   = ["mongodb-vm"]
 }

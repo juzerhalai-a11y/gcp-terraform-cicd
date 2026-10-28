@@ -106,7 +106,7 @@ resource "kubernetes_deployment" "webapp" {
 
           env {
             name  = "MONGODB_URI"
-            value = "mongodb://10.0.1.3:27017/todo"
+            value = "mongodb://10.0.1.16:27017/todo"
           }
         }
       }
