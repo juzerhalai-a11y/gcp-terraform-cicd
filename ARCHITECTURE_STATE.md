@@ -14,3 +14,6 @@
 
 ## 3. Current Symptom
 - Pod logs show `dial tcp 10.0.1.11:27017: i/o timeout` when hitting `/signup`, meaning traffic from the GKE private subnet (`10.0.2.0/24`) is hitting a routing or firewall block before reaching the public subnet VM (`10.0.1.11`).
+
+## 4. Wiz Security & GKE Deployment Exercise 
+Last tested: October 2026 - pipeline fully operational. 
