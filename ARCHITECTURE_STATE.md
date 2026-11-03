@@ -17,3 +17,6 @@
 
 ## 4. Wiz Security & GKE Deployment Exercise 
 Last tested: October 2026 - pipeline fully operational. 
+
+## 5. Wiz Security & GKE Deployment Exercise v1
+Last tested: October 2026 - pipeline fully operational. 
